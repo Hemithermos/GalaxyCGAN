@@ -37,3 +37,9 @@ Génération de galaxies par classe avec un GAN conditionnel (cGAN).
 python -m train.train
 python -m test.generate
 ```
+
+## Resultat
+![](outputs/generated_galaxies.png)
+
+
+
