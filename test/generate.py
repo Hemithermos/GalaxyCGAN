@@ -10,7 +10,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Charger le générateur
 G = Generator(Z_DIM, NUM_CLASSES, EMBED_DIM).to(device)
-ckpt = torch.load("checkpoints/ckpt_epoch_160.pt", map_location=device)
+ckpt = torch.load("checkpoints/ckpt_epoch_300.pt", map_location=device)
 G.load_state_dict(ckpt['G'])
 G.eval()
 

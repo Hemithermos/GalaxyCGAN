@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
 import os
 from tqdm import tqdm
-
+from pathlib import Path  # ajouter en haut
 from models.generator import Generator
 from models.discriminator import Discriminator
 from training.losses import wasserstein_loss_D, wasserstein_loss_G, gradient_penalty
@@ -15,13 +15,16 @@ Z_DIM       = 100
 NUM_CLASSES = 4
 EMBED_DIM   = 50
 BATCH_SIZE  = 64
-LR          = 1e-4          # plus faible pour WGAN
 BETAS       = (0.0, 0.9)    # recommandé pour WGAN-GP
 EPOCHS      = 200
-LAMBDA_GP   = 10
-N_CRITIC    = 5             # D s'entraîne 5x plus que G
 SAVE_EVERY  = 10
 IMG_EVERY   = 5
+
+# ── Config ──
+RESUME_FROM = "checkpoints/ckpt_epoch_200.pt"  # None pour repartir de zéro
+LR          = 5e-5   # réduit
+N_CRITIC    = 3
+LAMBDA_GP   = 5
 
 os.makedirs('checkpoints', exist_ok=True)
 os.makedirs('outputs/images', exist_ok=True)
@@ -50,16 +53,31 @@ def train():
 
     G = Generator(Z_DIM, NUM_CLASSES, EMBED_DIM).to(DEVICE)
     D = Discriminator(NUM_CLASSES).to(DEVICE)
-    G.apply(weights_init)
-    D.apply(weights_init)
 
+    # Créer les optimizers AVANT le resume
     opt_G = optim.Adam(G.parameters(), lr=LR, betas=BETAS)
     opt_D = optim.Adam(D.parameters(), lr=LR, betas=BETAS)
+
+    start_epoch = 1
+
+    if RESUME_FROM and Path(RESUME_FROM).exists():
+        ckpt = torch.load(RESUME_FROM, map_location=DEVICE)
+        G.load_state_dict(ckpt["G"])          # G dans G
+        D.load_state_dict(ckpt["D"])          # D dans D
+        opt_G.load_state_dict(ckpt["opt_G"])  # opt_G dans opt_G
+        opt_D.load_state_dict(ckpt["opt_D"])  # opt_D dans opt_D
+        start_epoch = ckpt["epoch"] + 1
+        print(f"Reprise depuis epoch {ckpt['epoch']} → jusqu'à {EPOCHS}")
+    else:
+        G.apply(weights_init)
+        D.apply(weights_init)
+        print("Entraînement from scratch")
+
 
     fixed_z      = torch.randn(16, Z_DIM).to(DEVICE)
     fixed_labels = torch.tensor([0, 1, 2, 3] * 4).to(DEVICE)
 
-    for epoch in range(1, EPOCHS + 1):
+    for epoch in range(start_epoch, start_epoch + EPOCHS+1):
         G.train(); D.train()
         loss_D_total = loss_G_total = 0
         g_updates = 0
