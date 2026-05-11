@@ -1,0 +1,15 @@
+# Environnement virtuel
+.venv/
+
+# Données (trop lourdes)
+data/raw
+data/processed
+outputs/eval
+
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
